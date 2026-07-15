@@ -155,6 +155,109 @@ def cmd_parse(args: argparse.Namespace) -> None:
     print(f"acceptance: fill true_count in {sample_path} ({len(sample)} papers) -> GROBID recall")
 
 
+def cmd_verify(args: argparse.Namespace) -> None:
+    from concurrent.futures import ThreadPoolExecutor
+
+    from tqdm import tqdm
+
+    from tuto.models import read_jsonl
+    from tuto.verify.classify import Classifier, verdict_to_dict
+    from tuto.verify.local_index import DblpIndex
+
+    run_dir = DATA / "runs" / args.venue
+    refs = list(read_jsonl(run_dir / "refs.jsonl"))
+    print(f"{len(refs)} references")
+
+    dblp = DblpIndex(DATA / "cache" / "dblp" / "dblp.sqlite")
+
+    # Phase 1: DBLP only. Offline, so the whole corpus resolves here in one cheap pass;
+    # only the tail it cannot find is escalated, which keeps Cito load proportional to the
+    # actual miss rate instead of the corpus size.
+    local = Classifier(dblp, cito=None)
+    verdicts = [local.classify(r) for r in tqdm(refs, desc="dblp", unit="ref")]
+
+    # Escalate everything DBLP did not positively resolve -- both not_found and the
+    # no-title unparseable refs, since Cito rescue keys on the raw string and can recover
+    # refs whose parsed title was unusable.
+    tail_idx = [i for i, v in enumerate(verdicts) if v.verdict in ("not_found", "unparseable")]
+    print(f"\nphase 1 (DBLP): {len(refs) - len(tail_idx)} resolved, {len(tail_idx)} to escalate")
+
+    # Phase 2: escalate the local misses to Cito (private, high-recall), if configured.
+    # A batch this size takes hours, so it is checkpointed and fault-tolerant: every Cito
+    # result is appended to a cache on disk, a single timed-out query cannot abort the run,
+    # and a rerun resumes from the cache instead of repeating work.
+    if not args.no_cito and tail_idx:
+        import json as _json
+        import threading
+
+        try:
+            from tuto.verify.cito_backend import CitoBackend
+
+            cache_path = run_dir / "cito_cache.jsonl"
+            cache: dict[str, dict] = {}
+            if cache_path.exists():
+                for row in read_jsonl(cache_path):
+                    cache[row["ref_id"]] = row
+            print(f"phase 2 (Cito): {len(cache)} cached, resuming")
+
+            cito = CitoBackend(rate_per_sec=args.cito_rps)
+            remote = Classifier(dblp, cito=cito)
+            ref_by_id = {r["ref_id"]: r for r in refs}
+            todo = [i for i in tail_idx if verdicts[i].ref_id not in cache]
+
+            write_lock = threading.Lock()
+            cache_file = cache_path.open("a", encoding="utf-8")
+            errors = 0
+
+            def recheck(i: int):
+                ref_id = verdicts[i].ref_id
+                try:
+                    v = remote.classify(ref_by_id[ref_id])
+                except Exception:  # noqa: BLE001 - one bad query must not sink the batch
+                    return i, None  # leave phase-1 verdict; a rerun retries this ref
+                row = verdict_to_dict(v)
+                with write_lock:
+                    cache_file.write(_json.dumps(row, ensure_ascii=False) + "\n")
+                    cache_file.flush()
+                return i, v
+
+            with ThreadPoolExecutor(max_workers=args.workers) as pool:
+                for i, v in tqdm(
+                    pool.map(recheck, todo), total=len(todo), desc="cito", unit="ref"
+                ):
+                    if v is None:
+                        errors += 1
+                    else:
+                        verdicts[i] = v
+            cache_file.close()
+            cito.close()
+
+            # Fold in everything the cache holds (this run's results + any prior run's).
+            id_to_idx = {verdicts[i].ref_id: i for i in tail_idx}
+            from tuto.verify.classify import Verdict
+
+            for ref_id, row in cache.items():
+                if ref_id in id_to_idx:
+                    verdicts[id_to_idx[ref_id]] = Verdict(**row)
+            recovered = sum(1 for i in tail_idx if verdicts[i].verdict == "exists")
+            print(f"phase 2 (Cito): recovered {recovered} of {len(tail_idx)}, {errors} errors (retry on rerun)")
+        except ValueError as e:
+            print(f"phase 2 skipped: {e}")
+
+    dblp.close()
+    write_jsonl(run_dir / "verdicts.jsonl", [verdict_to_dict(v) for v in verdicts])
+
+    dist = Counter(v.verdict for v in verdicts)
+    via = Counter(v.matched_via for v in verdicts if v.verdict == "exists")
+    total = len(verdicts)
+    print("\nL1 verdicts:")
+    for k in ("exists", "minor_mismatch", "not_found", "unparseable"):
+        print(f"  {k:<15} {dist.get(k, 0):>7}  {dist.get(k, 0) / total:>6.1%}")
+    print("  exists matched via:", dict(via))
+    print(f"\nnot_found (suspect candidates for triage): {dist.get('not_found', 0)}")
+    print(f"wrote {run_dir}/verdicts.jsonl")
+
+
 def main() -> None:
     parser = argparse.ArgumentParser(prog="tuto")
     sub = parser.add_subparsers(dest="command", required=True)
@@ -174,6 +277,13 @@ def main() -> None:
     p.add_argument("--workers", type=int, default=8)
     p.add_argument("--limit", type=int, help="only cross-check the first N pdfs")
     p.set_defaults(func=cmd_parse)
+
+    p = sub.add_parser("verify", help="L1 existence check -> verdicts.jsonl (four-way + evidence)")
+    p.add_argument("--venue", required=True, choices=sorted(VENUES))
+    p.add_argument("--no-cito", action="store_true", help="DBLP only, skip Cito escalation")
+    p.add_argument("--cito-rps", type=float, default=20.0, help="Cito requests/sec cap")
+    p.add_argument("--workers", type=int, default=12, help="concurrent Cito lookups")
+    p.set_defaults(func=cmd_verify)
 
     args = parser.parse_args()
     args.func(args)

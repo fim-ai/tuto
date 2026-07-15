@@ -10,6 +10,7 @@ dependencies = [
     "tqdm>=4.66",
     "defusedxml>=0.7",
     "pdfplumber>=0.11",
+    "lxml>=5.0",
 ]
 
 [project.scripts]

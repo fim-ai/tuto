@@ -37,11 +37,37 @@ VENUES: dict[str, list[str]] = {
     "acl-2026": ["2026.acl-long", "2026.acl-short", "2026.findings-acl"],
     "acl-2025": ["2025.acl-long", "2025.acl-short", "2025.findings-acl"],
     "emnlp-2025": ["2025.emnlp-main", "2025.findings-emnlp"],
+    # Pre-2020 Anthology uses the old letter-code scheme: P18-1xxx = ACL 2018 long,
+    # P18-2xxx = ACL 2018 short. (Findings did not exist yet.) Used as the pre-LLM temporal
+    # contrast against acl-2026.
+    "acl-2018": ["P18-1", "P18-2"],
+    # Contrast corpus: never-reviewed arXiv cs.CL preprints. Ingested by
+    # tuto.ingest.arxiv_preprints, not from the Anthology bib, so it has no prefixes; the key
+    # only needs to exist so parse/verify accept --venue.
+    "arxiv-cscl-2024": [],
 }
 
 _FIELD_RE = re.compile(r'(\w+)\s*=\s*"((?:[^"\\]|\\.)*)"', re.DOTALL)
 _ID_RE = re.compile(r"https://aclanthology\.org/([^/\"]+?)/?$")
+# Old-scheme id: letter(s)+2-digit-year, dash, single volume digit, then the paper number.
+_OLD_ID_RE = re.compile(r"^([A-Z]\d{2})-(\d)(\d+)$")
 _WS_RE = re.compile(r"\s+")
+
+
+def _volume_of(paper_id: str) -> str:
+    """Group key for a paper. Handles both id schemes: 2026.acl-long.1 and P18-1001."""
+    m = _OLD_ID_RE.match(paper_id)
+    if m:
+        return f"{m.group(1)}-{m.group(2)}"  # P18-1001 -> P18-1
+    return paper_id.rsplit(".", 1)[0]  # 2026.acl-long.1 -> 2026.acl-long
+
+
+def _is_frontmatter(paper_id: str) -> bool:
+    """The per-volume front matter is not a paper: modern '.0', old '-N000'."""
+    if paper_id.endswith(".0"):
+        return True
+    m = _OLD_ID_RE.match(paper_id)
+    return bool(m and set(m.group(3)) == {"0"})  # P18-1000
 
 
 def _debrace(s: str) -> str:
@@ -89,13 +115,12 @@ def parse_entry(entry: str, venue: str, prefixes: list[str]) -> PaperRecord | No
         return None
     paper_id = m.group(1)
 
-    volume = paper_id.rsplit(".", 1)[0]  # "2026.acl-long.1" -> "2026.acl-long"
+    volume = _volume_of(paper_id)
     # Volume prefixes carry a trailing part number in some years (2026.findings-acl-1),
     # so match on prefix rather than equality.
     if not any(volume.startswith(p) for p in prefixes):
         return None
-    # The volume frontmatter entry (".0") is not a paper.
-    if paper_id.endswith(".0"):
+    if _is_frontmatter(paper_id):
         return None
 
     bibkey_m = re.match(r"@\w+\{([^,]+),", entry)

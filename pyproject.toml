@@ -11,6 +11,8 @@ dependencies = [
     "defusedxml>=0.7",
     "pdfplumber>=0.11",
     "lxml>=5.0",
+    "pylatexenc>=2.10",
+    "rank-bm25>=0.2.2",
 ]
 
 [project.scripts]

@@ -24,7 +24,9 @@ from tuto.models import Context, Reference
 
 TEI_NS = {"tei": "http://www.tei-c.org/ns/1.0"}
 _WS_RE = re.compile(r"\s+")
-_ARXIV_RE = re.compile(r"arxiv[.:\s]*(\d{4}\.\d{4,5})", re.IGNORECASE)
+_ARXIV_RE = re.compile(r"(?:arxiv[:\s.]*|\babs/)(\d{4}\.\d{4,5})(?:v\d+)?", re.IGNORECASE)
+_DOI_RE = re.compile(r"10\.\d{4,9}/[^\s\"'<>]+")
+_YEAR_RE = re.compile(r"(?:19|20)\d{2}")
 
 
 class GrobidError(RuntimeError):
@@ -103,19 +105,6 @@ def _parse_biblstruct(bs: ET.Element, paper_id: str, index: int) -> Reference:
         if name:
             authors.append(name)
 
-    year = None
-    date = bs.find(".//tei:imprint/tei:date", TEI_NS)
-    if date is not None:
-        m = re.search(r"(19|20)\d{2}", date.get("when", "") or _text(date))
-        if m:
-            year = int(m.group(0))
-
-    venue = _text(bs.find(".//tei:monogr/tei:title[@level='j']", TEI_NS)) or _text(
-        bs.find(".//tei:monogr/tei:title[@level='m']", TEI_NS)
-    )
-    if venue == title:
-        venue = ""
-
     doi = None
     arxiv_id = None
     for idno in bs.findall(".//tei:idno", TEI_NS):
@@ -124,11 +113,37 @@ def _parse_biblstruct(bs: ET.Element, paper_id: str, index: int) -> Reference:
         if kind == "doi":
             doi = val.lower()
         elif kind == "arxiv":
-            arxiv_id = val
+            m = _ARXIV_RE.search(val)
+            arxiv_id = m.group(1) if m else (val or None)
+    # Recover ids GROBID left out of the structured fields. The raw arXiv scan catches
+    # "CoRR, abs/1907.10597" and bare-id forms that carry no literal "arXiv" prefix.
     if not arxiv_id and raw:
         m = _ARXIV_RE.search(raw)
         if m:
             arxiv_id = m.group(1)
+    if not doi and raw:
+        m = _DOI_RE.search(raw)
+        if m:
+            doi = m.group(0).lower()
+
+    year = None
+    date = bs.find(".//tei:imprint/tei:date", TEI_NS)
+    if date is not None:
+        m = _YEAR_RE.search(date.get("when", "") or _text(date))
+        if m:
+            year = int(m.group(0))
+    # GROBID sometimes reads an arXiv id's YYMM prefix (abs/1907.10597 -> 1907) as the
+    # date. A year equal to that prefix is discarded and re-derived from the raw with the
+    # id masked out, so a 2019 paper is not stamped 1907.
+    if year is not None and arxiv_id and str(year) == arxiv_id.split(".")[0]:
+        yrs = _YEAR_RE.findall(_ARXIV_RE.sub(" ", raw))
+        year = int(yrs[-1]) if yrs else None
+
+    venue = _text(bs.find(".//tei:monogr/tei:title[@level='j']", TEI_NS)) or _text(
+        bs.find(".//tei:monogr/tei:title[@level='m']", TEI_NS)
+    )
+    if venue == title:
+        venue = ""
 
     return Reference(
         ref_id=f"{paper_id}#{index}",
@@ -161,7 +176,9 @@ def parse_contexts(tei_full: str, paper_id: str, refs: list[Reference]) -> list[
 
     The body's bibr targets index the fulltext run's own bibliography, which is not the
     list we audit, so we bridge the two by fingerprinting the raw reference string. A
-    context whose reference we cannot bridge is still worth keeping.
+    context we cannot bridge back to an audited reference is dropped: L2 checks a claim
+    against one specific cited work, so a context with no known reference has nothing to
+    check.
     """
     root = safe_fromstring(tei_full)
 

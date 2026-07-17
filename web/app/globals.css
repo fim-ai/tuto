@@ -607,7 +607,7 @@ a {
   font-weight: normal;
 }
 
-.check-health {
+.check-coverage {
   display: flex;
   align-items: center;
   gap: 1.25rem;
@@ -617,28 +617,26 @@ a {
   margin-bottom: 1.75rem;
 }
 
-.check-score {
+/* Deliberately not accented at any value: low coverage is our limit, not the
+   paper's fault, and an alarm colour here would read as an accusation. */
+.check-cov-num {
   flex: none;
   display: flex;
   align-items: baseline;
   font-family: var(--serif);
 }
 
-.check-score .num {
+.check-cov-num .num {
   font-size: 2.6rem;
   line-height: 1;
 }
 
-.check-score .num.accent {
-  color: var(--accent);
-}
-
-.check-score .denom {
+.check-cov-num .denom {
   color: var(--ink-faint);
   font-size: 1rem;
 }
 
-.check-score-text {
+.check-cov-text {
   display: flex;
   flex-direction: column;
   gap: 0.3rem;
@@ -646,12 +644,12 @@ a {
   line-height: 1.55;
 }
 
-.check-score-text span {
+.check-cov-text span {
   color: var(--ink-faint);
 }
 
 @media (max-width: 34rem) {
-  .check-health {
+  .check-coverage {
     flex-direction: column;
     align-items: flex-start;
     gap: 0.6rem;

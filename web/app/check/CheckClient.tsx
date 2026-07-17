@@ -272,29 +272,20 @@ function Result({ r }: { r: CheckResult }) {
   // to a real paper anyway.
   const matched = l1.exists + l1.minor_mismatch + (triage.exists ?? 0);
   const unmatched = total - matched;
-  const nonPaper = (triage.non_paper ?? 0) + (judge.non_paper ?? 0);
-  const garbled = (judge.garbled ?? 0) + l1.unparseable;
   const readCites = l2.claim_cites;
   const existenceLeads = r.leads.existence.length;
   const supportLeads = r.leads.support.length;
   const clean = existenceLeads + supportLeads === 0;
-
-  // Health is the share of the checks we could actually run that came back
-  // without a lead. Entries we could not parse are excluded from the
-  // denominator rather than counted against the paper: they were never checked.
-  const checks = total - garbled + readCites;
-  const health = checks
-    ? Math.round((100 * (checks - existenceLeads - supportLeads)) / checks)
-    : null;
-  const band =
-    health === null
-      ? ""
-      : health === 100
-        ? "no leads in anything we could check"
-        : health >= 95
-          ? "a few leads worth a look"
-          : "several leads worth a look";
   const coverage = total ? Math.round((100 * matched) / total) : 0;
+
+  // Partition everything that did not match, by why. Only the last two buckets are
+  // about the paper; the rest are about our reach. A reference our indexes happen to
+  // lack is not evidence against a citation and must not be worded like it.
+  const nonPaper = (triage.non_paper ?? 0) + (judge.non_paper ?? 0);
+  const garbled = (judge.garbled ?? 0) + l1.unparseable;
+  const indexGap = (judge.known_paper ?? 0) + (judge.plausible_paper ?? 0);
+  const suspicious = judge.suspicious ?? 0;
+  const rest = unmatched - nonPaper - garbled - indexGap - suspicious;
 
   const residue: string[] = [];
   if (nonPaper)
@@ -305,8 +296,13 @@ function Result({ r }: { r: CheckResult }) {
     residue.push(
       `${garbled} ${garbled === 1 ? "was" : "were"} too garbled to parse`
     );
-  const rest = unmatched - nonPaper - garbled;
-  if (rest > 0) residue.push(`${rest} we simply could not find`);
+  if (indexGap)
+    residue.push(
+      `${indexGap} ${indexGap === 1 ? "is a real paper" : "are real papers"} our indexes simply lack, by triage's reading`
+    );
+  if (suspicious)
+    residue.push(`${suspicious} looked suspicious enough to list below`);
+  if (rest > 0) residue.push(`${rest} we could not resolve either way`);
 
   const funnel = [
     {
@@ -318,7 +314,7 @@ function Result({ r }: { r: CheckResult }) {
       n: matched,
       label: "matched to a real paper",
       sub: unmatched
-        ? `found in DBLP or Cito, or rescued by fuzzy match. Of the ${unmatched} that did not match, ${residue.join(", ")}.`
+        ? `found in DBLP or Cito, or rescued by fuzzy match. Of the ${unmatched} that did not match: ${residue.join("; ")}.`
         : "every entry resolved to a paper that exists.",
     },
     {
@@ -334,23 +330,29 @@ function Result({ r }: { r: CheckResult }) {
         {r.title} <span className="check-year">({r.year})</span>
       </h2>
 
-      {health !== null && (
-        <div className="check-health">
-          <div className="check-score">
-            <span className={clean ? "num" : "num accent"}>{health}</span>
-            <span className="denom">/100</span>
-          </div>
-          <div className="check-score-text">
-            <strong>Citation health: {band}</strong>
-            <span>
-              The share of our {checks} checks that came back clean. It scores
-              what we could verify, not the paper: {coverage}% of the
-              bibliography matched an index, and only matched references get
-              their claims read.
-            </span>
-          </div>
+      <div className="check-coverage">
+        <div className="check-cov-num">
+          <span className="num">{coverage}</span>
+          <span className="denom">%</span>
         </div>
-      )}
+        <div className="check-cov-text">
+          <strong>
+            Coverage: we could check {matched} of {total} references
+          </strong>
+          <span>
+            {unmatched > 0 ? (
+              <>
+                The other {unmatched} are outside our reach, which is a limit of
+                this tool and not a finding about the paper.{" "}
+              </>
+            ) : (
+              <>Every entry in the bibliography resolved to a paper that exists.{" "}</>
+            )}
+            Only matched references get their claims read, so anything below is
+            drawn from these {matched}.
+          </span>
+        </div>
+      </div>
 
       <ol className="check-funnel">
         {funnel.map((f) => (

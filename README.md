@@ -4,9 +4,20 @@
 
 学术引文审计管线 + 顶会引文诚信公开报告。首战：ACL 2026 论文集（4,459 篇，主会 + Findings）。
 
-- 定位：fim.ai 学术产品群的品牌旗舰与获客引擎，收入预期为零
-- 站点：tuto.fim.ai（报告 + 单篇自助工具）；API：api.tuto.fim.ai
-- 文档：`docs/PRD.md`（功能书 v3）、`docs/ARCHITECTURE.md`（技术架构 v3）
+*Tuto is a citation-integrity audit pipeline. We checked all 209,985 references in the ACL 2026 proceedings: existence (L1) and, for claim citations, whether the cited paper actually supports the claim (L2). Full report at [tuto.fim.ai](https://tuto.fim.ai); English version at [/report](https://tuto.fim.ai/report).*
+
+- 站点：[tuto.fim.ai](https://tuto.fim.ai)（公开报告，中英双语）；单篇自助核查工具在路上
+- 报告源文件：`docs/REPORT-acl-2026-draft.md`（中文）/ `docs/REPORT-acl-2026-draft.en.md`（English）
+- 文档：`docs/PRD.md`（功能书）、`docs/ARCHITECTURE.md`（技术架构）
+
+## 结果速览（ACL 2026 全量）
+
+| 指标 | 数字 |
+|---|---|
+| 审计引文总数 | 209,985 条（4,459 篇） |
+| 证实不存在的引文 | 2 条（0.001%）：捏造不是主要问题 |
+| 至少含 1 条「证实不支撑」引用的论文占比 | 16%：支撑度才是 |
+| 我们自己的一审精确率 | 13%（公开发表，不藏）：误报是检测工具的头号敌人 |
 
 ## 为什么必须自己解析 PDF
 
@@ -14,20 +25,24 @@
 
 更根本的是，**这些库只存匹配成功的引文**。一条捏造的引文，本质上就是匹配不上、于是被静默丢弃的那条——用二手引文库找幻觉引文，逻辑上就找不到。所以必须从 PDF 读回作者真正写下的那串字。
 
-## 两仓库拓扑
+## 仓库结构
 
-| 仓库 | 可见性 | 内容 |
-|---|---|---|
-| `tuto`（本仓库） | public, Apache-2.0 | 审计管线 + 方法论 + 数据集脚本 |
-| `tuto-app` | private | `web/` Next.js 站点 + `api/` FastAPI（/check、/repair） |
+| 目录 | 内容 |
+|---|---|
+| `src/tuto/` | 审计管线（ingest / parse / verify / triage / arbiter） |
+| `docs/` | 报告全文（中英）、PRD、架构文档、人工复核记录（已匿名化） |
+| `web/` | tuto.fim.ai 报告站点（Next.js 静态站，渲染 `docs/` 下的报告） |
+| `tests/` | 解析与解析器守护回归测试 |
+
+自助核查 API（/check）规划中，届时另建服务仓库。
 
 ## 管线一览
 
 ```
-ingest → parse → verify(L1) → triage(自动复核漏斗) → repair(L3, Cito) → report
+ingest → parse → verify(L1) → triage(自动复核漏斗) → arbiter(L2 仲裁) → report
 ```
 
-人工只做三件事：抽检 150 条算误报率、挑 demo 案例、处理作者申诉（7 天窗）。
+人工只做三件事：抽检样本算误报率、终审 suspicious 清单（12 条，逐条查证）、挑选并匿名化报告案例。
 
 ## 用法
 
@@ -51,4 +66,17 @@ GROBID 需常驻：`docker run -d --name grobid -p 8070:8070 lfoppiano/grobid:0.
 - 解析：GROBID `processReferences`。**不用 MinerU**——ACL 的 PDF 是 LaTeX 直出的 born-digital，没有 OCR 需求；MinerU/OCR 只作 V2 上传工具的扫描件兜底
 - 解析验收：一个与 GROBID 原理不同的版式计数器全量交叉比对（数悬挂缩进的顶格行），只对分歧样本做人工核对，算出召回率 ± 区间并公开
 - L1 核验：本地快照优先（DBLP / arXiv / OpenAlex / Anthology bib + Cito 索引），Crossref/OpenAlex API 兜底
-- 红线：公开报告只发聚合统计，永不点名；作者通知与发布解耦（7 天申诉窗，30 天后发跟进报告）
+- 红线：公开报告只发聚合统计与匿名化案例，永不点名任何论文或作者；不做作者通知，不设申诉流程（详见报告 §3.4）
+
+## 站点开发
+
+```bash
+cd web && pnpm install && pnpm dev   # http://localhost:5297
+```
+
+站点在构建时读取 `../docs/` 下的报告 Markdown，纯静态输出。
+
+## License
+
+- 代码：Apache-2.0（见 `LICENSE`）
+- 报告文本（`docs/REPORT-*`）：CC BY 4.0

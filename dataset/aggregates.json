@@ -1,0 +1,162 @@
+{
+  "l1_judge_report": {
+    "suspects_in": 18750,
+    "judged": 18724,
+    "distribution": {
+      "non_paper": 6410,
+      "garbled": 4926,
+      "known_paper": 4623,
+      "plausible_paper": 2753,
+      "suspicious": 12
+    },
+    "non_paper_subtypes": {
+      "docs": 328,
+      "dataset": 593,
+      "model": 1961,
+      "blog": 987,
+      "report": 459,
+      "webpage": 928,
+      "software": 480,
+      "other": 463,
+      "standard": 119,
+      "thesis": 83,
+      "book": 5,
+      "organization": 3,
+      "textbook": 1
+    }
+  },
+  "l2_sample_report": {
+    "sampled": 150,
+    "distribution": {
+      "unverifiable_from_abstract": 69,
+      "supported": 63,
+      "partial": 17,
+      "not_supported": 1
+    },
+    "pct": {
+      "unverifiable_from_abstract": 0.46,
+      "supported": 0.42,
+      "partial": 0.11333333333333333,
+      "not_supported": 0.006666666666666667
+    }
+  },
+  "l2_fulltext_report": {
+    "sampled": 2577,
+    "source_mix": {
+      "fulltext": 2158,
+      "abstract": 419
+    },
+    "cite_type_mix": {
+      "claim": 2110,
+      "nominal": 467
+    },
+    "distribution_all": {
+      "supported": 1666,
+      "unverifiable_from_text": 781,
+      "not_supported": 121,
+      "partial": 9
+    },
+    "claim_cites": 2110,
+    "distribution_claim": {
+      "supported": 1441,
+      "unverifiable_from_text": 539,
+      "not_supported": 121,
+      "partial": 9
+    },
+    "pct_claim": {
+      "supported": 0.6829383886255924,
+      "unverifiable_from_text": 0.2554502369668246,
+      "not_supported": 0.057345971563981045,
+      "partial": 0.0042654028436018955
+    }
+  },
+  "l2_arbiter_report": {
+    "flagged_in": 147,
+    "arbitrated": 145,
+    "confirmed": 21,
+    "flag_precision": 0.14482758620689656,
+    "refuted_by_class": {
+      "span_ownership": 20,
+      "contrastive_misread": 8,
+      "multicite_overreach": 31,
+      "wrong_paper": 5,
+      "insufficient_evidence": 11,
+      "judge_error": 35,
+      "naming": 2,
+      "negative_claim": 12
+    },
+    "confirmed_by_class": {
+      "misattribution": 13,
+      "stance_inversion": 4,
+      "loose_cite": 1,
+      "overclaim": 3
+    }
+  },
+  "paper_audit_report": {
+    "venue": "acl-2026",
+    "papers": 100,
+    "claim_cites_judged": 2110,
+    "papers_with_first_pass_flag": 63,
+    "papers_with_confirmed": 16,
+    "pct_papers_confirmed": 0.16,
+    "confirmed_total": 20,
+    "confirmed_per_cite": 0.009478672985781991,
+    "confirmed_by_class": {
+      "misattribution": 12,
+      "stance_inversion": 4,
+      "loose_cite": 1,
+      "overclaim": 3
+    }
+  },
+  "control_l2_fulltext_report": {
+    "sampled": 150,
+    "source_mix": {
+      "abstract": 50,
+      "fulltext": 100
+    },
+    "cite_type_mix": {
+      "claim": 127,
+      "nominal": 23
+    },
+    "distribution_all": {
+      "supported": 89,
+      "unverifiable_from_text": 50,
+      "not_supported": 6,
+      "partial": 5
+    },
+    "claim_cites": 127,
+    "distribution_claim": {
+      "supported": 81,
+      "unverifiable_from_text": 35,
+      "not_supported": 6,
+      "partial": 5
+    },
+    "pct_claim": {
+      "supported": 0.6377952755905512,
+      "unverifiable_from_text": 0.2755905511811024,
+      "not_supported": 0.047244094488188976,
+      "partial": 0.03937007874015748
+    }
+  },
+  "control_l2_arbiter_report": {
+    "flagged_in": 24,
+    "arbitrated": 24,
+    "confirmed": 4,
+    "flag_precision": 0.16666666666666666,
+    "refuted_by_class": {
+      "wrong_paper": 7,
+      "multicite_overreach": 4,
+      "insufficient_evidence": 2,
+      "span_ownership": 2,
+      "negative_claim": 2,
+      "naming": 1,
+      "contrastive_misread": 1,
+      "judge_error": 1
+    },
+    "confirmed_by_class": {
+      "loose_cite": 1,
+      "stance_inversion": 2,
+      "misattribution": 1
+    }
+  }
+}

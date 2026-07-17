@@ -237,4 +237,4 @@ confirmed（约为一审 flag 的 12%）
 
 管线代码（Apache-2.0）：ingest → parse(GROBID) → L1 verify → L2 judge → arbiter → report。
 固定随机种子；判定 prompt、错误类型学、回归测试随仓库发布。
-匿名化数据集（引用级判定 + 仲裁记录，去除论文标识）：报告发布时以 CC BY 提供。
+匿名化数据集（引用级判定 + 仲裁记录，去除论文标识）：CC BY 4.0，见仓库 `dataset/` 目录（github.com/fim-ai/tuto）。

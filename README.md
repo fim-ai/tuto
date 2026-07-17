@@ -8,6 +8,7 @@
 
 - 站点：[tuto.fim.ai](https://tuto.fim.ai)（公开报告，中英双语）；单篇自助核查工具在路上
 - 报告源文件：`docs/REPORT-acl-2026-draft.md`（中文）/ `docs/REPORT-acl-2026-draft.en.md`（English）
+- 数据集：[`dataset/`](dataset/)（引用级判定 18,724 + 3,795 条、仲裁记录 169 条，已匿名化，CC BY 4.0，schema 见其 README）
 - 文档：`docs/PRD.md`（功能书）、`docs/ARCHITECTURE.md`（技术架构）
 
 ## 结果速览（ACL 2026 全量）

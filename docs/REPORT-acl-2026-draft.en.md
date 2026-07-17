@@ -238,4 +238,4 @@ Representative cases from the 25 confirmed findings (5 pilot + 20 paper-level), 
 
 Pipeline code (Apache-2.0): ingest → parse (GROBID) → L1 verify → L2 judge → arbiter → report.
 Fixed random seeds; judging prompts, error taxonomy, and regression tests ship with the repository.
-Anonymized dataset (citation-level judgments plus arbitration records, paper identifiers removed): CC BY, released with the report.
+Anonymized dataset (citation-level judgments plus arbitration records, paper identifiers removed): CC BY 4.0, in the repository's `dataset/` directory at github.com/fim-ai/tuto.

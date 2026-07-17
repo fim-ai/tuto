@@ -1,4 +1,41 @@
 import Link from "next/link";
+import {
+  IconArrowRight,
+  IconDocCheck,
+  IconFunnel,
+  IconGauge,
+  IconPhantomDoc,
+  IconSearch,
+  IconStack,
+  IconUnlink,
+} from "@/components/icons";
+
+const FIGURES = [
+  {
+    icon: IconStack,
+    num: "209,985",
+    accent: false,
+    label: "references audited across 4,459 papers",
+  },
+  {
+    icon: IconPhantomDoc,
+    num: "2",
+    accent: false,
+    label: "confirmed nonexistent references. Fabrication is not the story",
+  },
+  {
+    icon: IconUnlink,
+    num: "16%",
+    accent: true,
+    label: "of papers carry at least one confirmed unsupported citation",
+  },
+  {
+    icon: IconGauge,
+    num: "13%",
+    accent: false,
+    label: "our own first-pass precision, published, not hidden",
+  },
+];
 
 export default function Home() {
   return (
@@ -17,40 +54,28 @@ export default function Home() {
             <div className="hero-actions">
               <Link href="/report" className="btn">
                 Read the report
+                <IconArrowRight className="btn-icon" />
               </Link>
               <Link href="/check" className="btn btn-quiet">
+                <IconSearch className="btn-icon" />
                 Check your paper
               </Link>
             </div>
           </div>
           <div className="hero-figures">
-            <div className="figure-row">
-              <span className="num">209,985</span>
-              <span className="label">references audited across 4,459 papers</span>
-            </div>
-            <div className="figure-row">
-              <span className="num">2</span>
-              <span className="label">
-                confirmed nonexistent references. Fabrication is not the story
-              </span>
-            </div>
-            <div className="figure-row">
-              <span className="num accent">16%</span>
-              <span className="label">
-                of papers carry at least one confirmed unsupported citation
-              </span>
-            </div>
-            <div className="figure-row">
-              <span className="num">13%</span>
-              <span className="label">
-                our own first-pass precision, published, not hidden
-              </span>
-            </div>
+            {FIGURES.map(({ icon: Icon, num, accent, label }) => (
+              <div className="figure-row" key={num}>
+                <Icon className="figure-icon" />
+                <span className={accent ? "num accent" : "num"}>{num}</span>
+                <span className="label">{label}</span>
+              </div>
+            ))}
           </div>
         </section>
 
         <section className="strip">
           <div>
+            <IconDocCheck className="strip-icon" />
             <h2>Existence is a solved problem</h2>
             <p>
               Two verification stages plus human review reduced 210k references
@@ -59,6 +84,7 @@ export default function Home() {
             </p>
           </div>
           <div>
+            <IconUnlink className="strip-icon" />
             <h2>Support is the real problem</h2>
             <p>
               Real papers, cited for claims they never make. One in six papers
@@ -67,6 +93,7 @@ export default function Home() {
             </p>
           </div>
           <div>
+            <IconFunnel className="strip-icon" />
             <h2>False positives are the enemy</h2>
             <p>
               Raw detector output would have overstated the problem 8x. Every

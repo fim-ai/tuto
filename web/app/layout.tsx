@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import Link from "next/link";
+import { IconExternal, IconGitHub, IconSearch } from "@/components/icons";
 import "./globals.css";
 
 export const metadata: Metadata = {
@@ -26,7 +27,10 @@ export default function RootLayout({
               Tuto<span>.</span>
             </Link>
             <nav className="site-nav">
-              <Link href="/check">Check</Link>
+              <Link href="/check">
+                <IconSearch className="nav-icon" />
+                Check
+              </Link>
               <Link href="/report">Report</Link>
               <a
                 href="https://cito.fim.ai"
@@ -34,6 +38,16 @@ export default function RootLayout({
                 rel="noopener noreferrer"
               >
                 Cito
+                <IconExternal className="nav-icon nav-icon-trail" />
+              </a>
+              <a
+                href="https://github.com/fim-ai/tuto"
+                target="_blank"
+                rel="noopener noreferrer"
+                aria-label="Tuto on GitHub"
+                className="nav-github"
+              >
+                <IconGitHub className="nav-icon" />
               </a>
             </nav>
           </div>
@@ -47,7 +61,17 @@ export default function RootLayout({
                 fim.ai
               </a>
             </div>
-            <div>Pipeline Apache-2.0 · Dataset CC BY (on release)</div>
+            <div className="footer-links">
+              <a
+                href="https://github.com/fim-ai/tuto"
+                target="_blank"
+                rel="noopener noreferrer"
+              >
+                <IconGitHub className="nav-icon" />
+                Source and dataset
+              </a>
+              <span>Pipeline Apache-2.0 · Dataset CC BY 4.0</span>
+            </div>
           </div>
         </footer>
       </body>

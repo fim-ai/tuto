@@ -1,0 +1,8 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64">
+  <!-- Terracotta field rather than the ink one: the mark has to hold up against
+       both a light and a dark browser chrome, and ink-on-dark disappears. -->
+  <rect width="64" height="64" rx="13" fill="#b23a26"/>
+  <!-- "T." drawn as paths, not <text>: a favicon cannot rely on a font. -->
+  <path d="M13 14h38v9H36.5v27h-9V23H13z" fill="#fdfcfa"/>
+  <circle cx="47" cy="45.5" r="4.5" fill="#fdfcfa"/>
+</svg>

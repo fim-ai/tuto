@@ -653,3 +653,35 @@ a {
   border-radius: 999px;
   transition: width 600ms ease;
 }
+
+.check-steps {
+  list-style: none;
+  margin: 0.75rem 0 0;
+  padding: 0;
+  font-size: 0.92rem;
+  line-height: 1.9;
+}
+
+.check-steps li.done {
+  color: var(--ink-faint);
+}
+
+.check-steps li.current {
+  color: var(--ink);
+}
+
+.check-steps li.todo {
+  color: var(--ink-faint);
+  opacity: 0.55;
+}
+
+.check-step-mark {
+  display: inline-block;
+  width: 1.3rem;
+  font-family: var(--mono);
+  color: var(--accent);
+}
+
+.check-steps li.todo .check-step-mark {
+  color: var(--ink-faint);
+}

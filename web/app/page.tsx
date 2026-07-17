@@ -21,9 +21,6 @@ export default function Home() {
               <Link href="/check" className="btn btn-quiet">
                 Check your paper
               </Link>
-              <Link href="/report/zh" className="btn btn-quiet">
-                中文版
-              </Link>
             </div>
           </div>
           <div className="hero-figures">

@@ -1,83 +1,84 @@
 # Tuto
 
-> cito, **tuto**, iucunde — 快、稳、愉悦。Cito 管找到文献，Tuto 管引得对。
+> cito, **tuto**, iucunde: swiftly, safely, pleasantly. Cito finds the literature. Tuto makes sure it is cited correctly.
 
-学术引文审计管线 + 顶会引文诚信公开报告。首战：ACL 2026 论文集（4,459 篇，主会 + Findings）。
+A citation-integrity audit pipeline, plus a public integrity report for major venues. First run: the ACL 2026 proceedings (4,459 papers, main conference and Findings).
 
-*Tuto is a citation-integrity audit pipeline. We checked all 209,985 references in the ACL 2026 proceedings: existence (L1) and, for claim citations, whether the cited paper actually supports the claim (L2). Full report at [tuto.fim.ai](https://tuto.fim.ai); English version at [/report](https://tuto.fim.ai/report).*
+We checked all 209,985 references in ACL 2026 on two levels: whether the cited work exists (L1), and, for claim citations, whether the cited paper actually supports the claim it is attached to (L2).
 
-- 站点：[tuto.fim.ai](https://tuto.fim.ai)（公开报告，中英双语）；单篇自助核查工具在路上
-- 报告源文件：`docs/REPORT-acl-2026-draft.md`（中文）/ `docs/REPORT-acl-2026-draft.en.md`（English）
-- 数据集：[`dataset/`](dataset/)（引用级判定 18,724 + 3,795 条、仲裁记录 169 条，已匿名化，CC BY 4.0，schema 见其 README）
-- 文档：`docs/PRD.md`（功能书）、`docs/ARCHITECTURE.md`（技术架构）
+- Site: [tuto.fim.ai](https://tuto.fim.ai), the public report; the single-paper self-service checker is at [/check](https://tuto.fim.ai/check)
+- Report source: `docs/REPORT-acl-2026-draft.en.md`
+- Dataset: [`dataset/`](dataset/), 18,724 + 3,795 citation-level judgments and 169 arbitration records, anonymized, CC BY 4.0; schema in its README
+- Docs: `docs/PRD.md` (product spec), `docs/ARCHITECTURE.md` (technical architecture)
 
-## 结果速览（ACL 2026 全量）
+## Results at a glance (full ACL 2026 corpus)
 
-| 指标 | 数字 |
+| Metric | Number |
 |---|---|
-| 审计引文总数 | 209,985 条（4,459 篇） |
-| 证实不存在的引文 | 2 条（0.001%）：捏造不是主要问题 |
-| 至少含 1 条「证实不支撑」引用的论文占比 | 16%：支撑度才是 |
-| 我们自己的一审精确率 | 13%（公开发表，不藏）：误报是检测工具的头号敌人 |
+| References audited | 209,985 (across 4,459 papers) |
+| Confirmed nonexistent references | 2 (0.001%): fabrication is not the problem |
+| Papers with at least one confirmed unsupported citation | 16%: support is |
+| Our own first-pass precision | 13% (published, not hidden): false positives are the enemy |
 
-## 为什么必须自己解析 PDF
+## Why we parse the PDFs ourselves
 
-参考文献不在任何元数据里——`anthology.bib` 只有论文自己的元数据，不含它引了谁。二手引文库也拿不到：Crossref 对 ACL 论文的 `reference-count = 0`，OpenAlex 的 `referenced_works = 0`。
+Reference lists are not in any metadata. `anthology.bib` carries a paper's own metadata but not who it cites. Second-hand citation databases do not have it either: Crossref reports `reference-count = 0` for ACL papers, and OpenAlex reports `referenced_works = 0`.
 
-更根本的是，**这些库只存匹配成功的引文**。一条捏造的引文，本质上就是匹配不上、于是被静默丢弃的那条——用二手引文库找幻觉引文，逻辑上就找不到。所以必须从 PDF 读回作者真正写下的那串字。
+The deeper reason is that **those databases only store references that matched something**. A fabricated reference is, by construction, the one that failed to match and was silently dropped. Hunting hallucinated citations in a second-hand citation database is logically self-defeating. You have to read back the actual string the author wrote, from the PDF.
 
-## 仓库结构
+## Repository layout
 
-| 目录 | 内容 |
+| Directory | Contents |
 |---|---|
-| `src/tuto/` | 审计管线（ingest / parse / verify / triage / arbiter） |
-| `docs/` | 报告全文（中英）、PRD、架构文档、人工复核记录（已匿名化） |
-| `web/` | tuto.fim.ai 站点：报告 + [/check](https://tuto.fim.ai/check) 单篇自助核查页 |
-| `tests/` | 解析与解析器守护回归测试 |
+| `src/tuto/` | The audit pipeline (ingest / parse / verify / triage / arbiter) |
+| `docs/` | Full report, PRD, architecture, anonymized manual-review records |
+| `web/` | tuto.fim.ai: the report and the [/check](https://tuto.fim.ai/check) self-service page |
+| `tests/` | Parsing and parser-guard regression tests |
 
-**单篇自助核查已上线**：[tuto.fim.ai/check](https://tuto.fim.ai/check) 丢一个 arXiv ID，跑与全量审计同一条管线（存在性 + 论断支撑 + 仲裁），几分钟后返回「待人工复核的线索」。服务端在 `src/tuto/check/`（FastAPI，`pip install -e ".[api]"`），单机自部署：`uvicorn tuto.check.service:app` + 一个 GROBID 容器 + DBLP 快照。
+**Single-paper checking is live** at [tuto.fim.ai/check](https://tuto.fim.ai/check). Drop in an arXiv ID and it runs the same pipeline as the full audit (existence, claim support, arbitration), returning leads for human review in a few minutes. The server lives in `src/tuto/check/` (FastAPI, `pip install -e ".[api]"`) and self-hosts on one machine: `uvicorn tuto.check.service:app` plus a GROBID container and a DBLP snapshot.
 
-## 管线一览
+## The pipeline
 
 ```
-ingest → parse → verify(L1) → triage(自动复核漏斗) → arbiter(L2 仲裁) → report
+ingest → parse → verify(L1) → triage(automated review funnel) → arbiter(L2 arbitration) → report
 ```
 
-人工只做三件事：抽检样本算误报率、终审 suspicious 清单（12 条，逐条查证）、挑选并匿名化报告案例。
+Humans do only three things: spot-check a sample to compute the false-positive rate, adjudicate the suspicious list (12 items, verified one by one), and select and anonymize the cases that appear in the report.
 
-## 用法
+## Usage
 
 ```bash
 uv venv --python 3.12 && uv pip install -e .
 
-# 采集：全量 bib + PDF（按 IP 限速约 1MB/s，4,459 篇约 3 小时，断点续传）
+# Ingest: all bib entries and PDFs (rate-limited to ~1MB/s per IP;
+# 4,459 papers takes about 3 hours, resumable)
 uv run tuto ingest --venue acl-2026
 
-# 解析：GROBID → refs.jsonl + contexts.jsonl，并产出解析验收样本
+# Parse: GROBID → refs.jsonl + contexts.jsonl, plus a parse-acceptance sample
 uv run tuto parse --venue acl-2026 --grobid-url http://localhost:8070
 ```
 
-GROBID 需常驻：`docker run -d --name grobid -p 8070:8070 lfoppiano/grobid:0.8.1`
+GROBID needs to be running: `docker run -d --name grobid -p 8070:8070 lfoppiano/grobid:0.8.1`
 
-换会场只改 `src/tuto/ingest/acl_anthology.py` 里的 `VENUES` 表加一行。
+To audit a different venue, add a row to the `VENUES` table in `src/tuto/ingest/acl_anthology.py`.
 
-## 快速事实
+## Quick facts
 
-- 数据源：ACL Anthology 直连（全量 bib + 规律 URL PDF）
-- 解析：GROBID `processReferences`。**不用 MinerU**——ACL 的 PDF 是 LaTeX 直出的 born-digital，没有 OCR 需求；MinerU/OCR 只作 V2 上传工具的扫描件兜底
-- 解析验收：一个与 GROBID 原理不同的版式计数器全量交叉比对（数悬挂缩进的顶格行），只对分歧样本做人工核对，算出召回率 ± 区间并公开
-- L1 核验：本地快照优先（DBLP / arXiv / OpenAlex / Anthology bib + Cito 索引），Crossref/OpenAlex API 兜底
-- 红线：公开报告只发聚合统计与匿名化案例，永不点名任何论文或作者；不做作者通知，不设申诉流程（详见报告 §3.4）
+- Data source: ACL Anthology directly (full bib dump, PDFs at predictable URLs)
+- Parsing: GROBID `processReferences`. **Not MinerU.** ACL PDFs are born-digital LaTeX output with no OCR need; MinerU and OCR are reserved as a scanned-document fallback for the V2 upload tool
+- Parse acceptance: a layout-based reference counter working on a different principle from GROBID (it counts flush-left lines of hanging-indent blocks) cross-checks the whole corpus. Only the disagreements get manual review, which yields a recall estimate with an interval, published
+- L1 verification: local snapshots first (DBLP / arXiv / OpenAlex / Anthology bib + the Cito index), falling back to the Crossref and OpenAlex APIs
+- Hard rule: the public report carries aggregate statistics and anonymized cases only. It never names a paper or an author. There is no author notification and no appeal process (see report §3.4)
 
-## 站点开发
+## Site development
 
 ```bash
 cd web && pnpm install && pnpm dev   # http://localhost:5297
 ```
 
-站点在构建时读取 `../docs/` 下的报告 Markdown，纯静态输出。
+The site reads the report Markdown from `../docs/` at build time.
 
 ## License
 
-- 代码：Apache-2.0（见 `LICENSE`）
-- 报告文本（`docs/REPORT-*`）：CC BY 4.0
+- Code: Apache-2.0 (see `LICENSE`)
+- Report text (`docs/REPORT-*`): CC BY 4.0

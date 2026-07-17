@@ -10,7 +10,11 @@ const nextConfig = {
   turbopack: { root: repoRoot },
   outputFileTracingIncludes: {
     '/report': ['../docs/*.md'],
-    '/report/zh': ['../docs/*.md'],
+  },
+  // The zh report was published at /report/zh before English became canonical.
+  // Keep the URL alive for anyone holding the old link.
+  async redirects() {
+    return [{ source: '/report/zh', destination: '/report', permanent: true }];
   },
 };
 export default nextConfig;

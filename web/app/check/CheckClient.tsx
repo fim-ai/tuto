@@ -78,7 +78,11 @@ const STAGES: { key: string; label: string }[] = [
 
 const EXAMPLES: { id: string; label: string }[] = [
   { id: "1706.03762", label: "Attention Is All You Need" },
+  { id: "1810.04805", label: "BERT" },
+  { id: "1512.03385", label: "ResNet" },
   { id: "2005.14165", label: "GPT-3" },
+  { id: "2203.02155", label: "InstructGPT" },
+  { id: "2106.09685", label: "LoRA" },
   { id: "2310.06825", label: "Mistral 7B" },
 ];
 
@@ -126,7 +130,7 @@ export default function CheckClient() {
       }
       const { job_id } = await r.json();
       await poll(job_id);
-      timer.current = setInterval(() => poll(job_id), 5000);
+      timer.current = setInterval(() => poll(job_id), 2500);
     } catch (err) {
       setError(err instanceof Error ? err.message : "request failed");
     } finally {
@@ -199,10 +203,28 @@ export default function CheckClient() {
           ) : (
             <>
               <p>
-                Step {stageIdx + 1} of {STAGES.length} ·{" "}
-                {STAGES[stageIdx]?.label || "Working"}
-                <span aria-hidden>…</span>
+                Step {stageIdx + 1} of {STAGES.length}
               </p>
+              <ol className="check-steps">
+                {STAGES.map((s, i) => (
+                  <li
+                    key={s.key}
+                    className={
+                      i < stageIdx
+                        ? "done"
+                        : i === stageIdx
+                          ? "current"
+                          : "todo"
+                    }
+                  >
+                    <span className="check-step-mark" aria-hidden>
+                      {i < stageIdx ? "✓" : i === stageIdx ? "•" : "·"}
+                    </span>
+                    {s.label}
+                    {i === stageIdx && <span aria-hidden>…</span>}
+                  </li>
+                ))}
+              </ol>
               <div
                 className="check-bar"
                 role="progressbar"

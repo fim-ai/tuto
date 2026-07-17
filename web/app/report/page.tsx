@@ -1,5 +1,4 @@
 import type { Metadata } from "next";
-import Link from "next/link";
 import { Article, readReport } from "@/lib/report";
 
 export const metadata: Metadata = {
@@ -12,9 +11,7 @@ export default function ReportPage() {
   const md = readReport("REPORT-acl-2026-draft.en.md");
   return (
     <main className="article-shell">
-      <p className="article-meta">
-        Draft v0.6 · 2026-07-17 · <Link href="/report/zh">中文版</Link>
-      </p>
+      <p className="article-meta">Draft v0.6 · 2026-07-17</p>
       <Article markdown={md} />
     </main>
   );

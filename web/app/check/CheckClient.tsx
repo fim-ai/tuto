@@ -55,15 +55,32 @@ type CheckResult = {
   };
 };
 
-const STAGE_LABELS: Record<string, string> = {
-  starting: "Starting",
-  "fetching paper": "Fetching the paper from arXiv",
-  "extracting references": "Extracting the bibliography and citing sentences",
-  "checking existence": "Checking every reference against DBLP and Cito",
-  "triaging unresolved references": "Triaging unresolved references",
-  "judging claim support": "Reading the cited papers and judging claim support",
-  "arbitrating flags": "Second-stage review of every flag",
-};
+const STAGES: { key: string; label: string }[] = [
+  { key: "fetching paper", label: "Fetching the paper from arXiv" },
+  {
+    key: "extracting references",
+    label: "Extracting the bibliography and citing sentences",
+  },
+  {
+    key: "checking existence",
+    label: "Checking every reference against DBLP and Cito",
+  },
+  {
+    key: "triaging unresolved references",
+    label: "Triaging unresolved references",
+  },
+  {
+    key: "judging claim support",
+    label: "Reading the cited papers and judging claim support",
+  },
+  { key: "arbitrating flags", label: "Second-stage review of every flag" },
+];
+
+const EXAMPLES: { id: string; label: string }[] = [
+  { id: "1706.03762", label: "Attention Is All You Need" },
+  { id: "2005.14165", label: "GPT-3" },
+  { id: "2310.06825", label: "Mistral 7B" },
+];
 
 export default function CheckClient() {
   const [input, setInput] = useState("");
@@ -93,8 +110,7 @@ export default function CheckClient() {
     };
   }, []);
 
-  async function submit(e: React.FormEvent) {
-    e.preventDefault();
+  async function doSubmit(value: string) {
     setError(null);
     setJob(null);
     setSubmitting(true);
@@ -102,7 +118,7 @@ export default function CheckClient() {
       const r = await fetch(`${API_BASE}/check`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ arxiv_id: input }),
+        body: JSON.stringify({ arxiv_id: value }),
       });
       if (!r.ok) {
         const body = await r.json().catch(() => null);
@@ -120,10 +136,20 @@ export default function CheckClient() {
 
   const running = job && (job.status === "queued" || job.status === "running");
   const result = job?.status === "done" ? job.result : undefined;
+  const stageIdx = Math.max(
+    0,
+    STAGES.findIndex((s) => s.key === job?.stage)
+  );
 
   return (
     <div>
-      <form className="check-form" onSubmit={submit}>
+      <form
+        className="check-form"
+        onSubmit={(e) => {
+          e.preventDefault();
+          doSubmit(input);
+        }}
+      >
         <input
           type="text"
           value={input}
@@ -141,20 +167,58 @@ export default function CheckClient() {
         </button>
       </form>
 
+      <div className="check-examples">
+        <span>Try one:</span>
+        {EXAMPLES.map((ex) => (
+          <button
+            key={ex.id}
+            type="button"
+            className="check-chip"
+            disabled={!!running || submitting}
+            onClick={() => {
+              setInput(ex.id);
+              doSubmit(ex.id);
+            }}
+          >
+            {ex.label}
+          </button>
+        ))}
+      </div>
+
       {error && <p className="check-error">{error}</p>}
 
       {running && (
         <div className="check-progress">
-          <p>
-            {job.status === "queued"
-              ? job.queue_ahead
+          {job.status === "queued" ? (
+            <p>
+              {job.queue_ahead
                 ? `Queued, ${job.queue_ahead} ahead of you`
-                : "Queued"
-              : STAGE_LABELS[job.stage || ""] || "Working"}
-            <span className="check-ellipsis" aria-hidden>
-              …
-            </span>
-          </p>
+                : "Queued"}
+              <span aria-hidden>…</span>
+            </p>
+          ) : (
+            <>
+              <p>
+                Step {stageIdx + 1} of {STAGES.length} ·{" "}
+                {STAGES[stageIdx]?.label || "Working"}
+                <span aria-hidden>…</span>
+              </p>
+              <div
+                className="check-bar"
+                role="progressbar"
+                aria-valuemin={0}
+                aria-valuemax={STAGES.length}
+                aria-valuenow={stageIdx + 1}
+              >
+                <div
+                  className="check-bar-fill"
+                  style={{
+                    width: `${((stageIdx + 1) / STAGES.length) * 100}%`,
+                  }}
+                />
+              </div>
+            </>
+          )}
           <p className="check-note">
             A full check reads the cited papers and takes a few minutes. Leave
             this tab open, or come back and resubmit the same id: results are

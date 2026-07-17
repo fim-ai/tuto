@@ -607,3 +607,49 @@ a {
   line-height: 1.5;
   margin: 0;
 }
+
+.check-examples {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  margin-top: 0.9rem;
+  color: var(--ink-faint);
+  font-size: 0.85rem;
+}
+
+.check-chip {
+  font: inherit;
+  font-size: 0.82rem;
+  color: var(--ink-soft);
+  background: var(--bg-raised);
+  border: 1px solid var(--hairline);
+  border-radius: 999px;
+  padding: 0.3rem 0.8rem;
+  cursor: pointer;
+}
+
+.check-chip:hover {
+  color: var(--accent-ink);
+  border-color: var(--accent-ink);
+}
+
+.check-chip:disabled {
+  opacity: 0.5;
+  cursor: default;
+}
+
+.check-bar {
+  height: 4px;
+  background: var(--bg-raised);
+  border-radius: 999px;
+  overflow: hidden;
+  margin-top: 0.9rem;
+}
+
+.check-bar-fill {
+  height: 100%;
+  background: var(--accent);
+  border-radius: 999px;
+  transition: width 600ms ease;
+}

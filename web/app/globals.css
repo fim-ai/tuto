@@ -589,10 +589,14 @@ a {
   margin-top: 0.5rem;
 }
 
+/* Everything in here is upstream text we do not control: arXiv titles, and raw
+   references straight off the PDF. One long unbroken token used to push the whole
+   page sideways, so wrapping is set once at the top and inherited. */
 .check-result {
   margin-top: 2.5rem;
   border-top: 1px solid var(--hairline);
   padding-top: 1.75rem;
+  overflow-wrap: break-word;
 }
 
 .check-result h2 {
@@ -775,9 +779,12 @@ a {
   margin: 0 0 0.4rem;
 }
 
+/* A good share of the unresolved references are bare URLs, which offer no break
+   opportunity at all: those need `anywhere` rather than `break-word`. */
 .check-raw {
   font-family: var(--mono);
   font-size: 0.85rem;
+  overflow-wrap: anywhere;
 }
 
 .check-cites {

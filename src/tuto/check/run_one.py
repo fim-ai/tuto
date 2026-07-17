@@ -150,12 +150,17 @@ def check_arxiv(
     l1_leads: list[dict] = []
     triage_dist: dict = {}
     judge_dist: dict = {}
+    judge_dropped = 0
     if n_not_found:
         progress("triaging unresolved references")
         rescue_report = rescue.run(venue, limit=None, cito_rps=cito_rps, workers=workers)
         triage_dist = rescue_report.get("stage_dist", {})
         judge_report = llm_judge.run(venue, limit=None, workers=workers, model=None)
         judge_dist = judge_report.get("distribution", {})
+        # A reference the judge could not classify (empty raw, or the LLM failing every
+        # retry) is dropped from the distribution and would otherwise vanish: it must be
+        # reported as unresolved, not silently absorbed.
+        judge_dropped = judge_report.get("suspects_in", 0) - judge_report.get("judged", 0)
         by_rid = {r["ref_id"]: r for r in ref_dicts}
         for s in judge_report.get("suspicious", []):
             ref = by_rid.get(s["ref_id"], {})
@@ -227,6 +232,7 @@ def check_arxiv(
                 "not_found_raw": n_not_found,
                 "triage": triage_dist,
                 "llm_judge": judge_dist,
+                "judge_dropped": judge_dropped,
                 "suspicious_leads": len(l1_leads),
             },
             "l2": {

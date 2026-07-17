@@ -304,6 +304,30 @@ function Result({ r }: { r: CheckResult }) {
     residue.push(`${suspicious} looked suspicious enough to list below`);
   if (rest > 0) residue.push(`${rest} we could not resolve either way`);
 
+  // Of the matched references, only those with an extracted citing sentence are
+  // examined at all, and the cap can cut that short. Folding the unexamined ones in
+  // with the nominal citations would claim we read references we never opened: on
+  // InstructGPT that was 27 of the 43 the page called nominal.
+  const examined = l2.judged;
+  const nominal = Math.max(0, examined - readCites);
+  const unexamined = Math.max(0, matched - examined);
+  const claimSub =
+    matched === 0
+      ? "No reference resolved to a paper, so there was nothing to read a claim against."
+      : [
+          examined > 0
+            ? `We examined ${examined} of the ${matched} matched ${matched === 1 ? "reference" : "references"}, and ${readCites} of those ${readCites === 1 ? "makes" : "make"} a checkable claim judged against the cited paper's full text.`
+            : `None of the ${matched} matched ${matched === 1 ? "reference" : "references"} could be examined against the cited paper.`,
+          nominal > 0
+            ? `The other ${nominal} ${nominal === 1 ? "is a nominal citation" : "are nominal citations"}.`
+            : "",
+          unexamined > 0
+            ? `The remaining ${unexamined} we did not examine${l2.capped ? ": either no citing sentence was extracted, or the cap of 60 per paper cut them off" : ", because no citing sentence could be extracted"}.`
+            : "",
+        ]
+          .filter(Boolean)
+          .join(" ");
+
   const funnel = [
     {
       n: total,
@@ -320,7 +344,7 @@ function Result({ r }: { r: CheckResult }) {
     {
       n: readCites,
       label: "claims read against the cited paper",
-      sub: `matched references whose citing sentence makes a checkable claim, judged against the cited paper's full text${l2.capped ? ", capped at 60 per paper" : ""}. The other ${matched - readCites} are nominal citations, or we could not retrieve the text to read.`,
+      sub: claimSub,
     },
   ];
 
@@ -337,13 +361,15 @@ function Result({ r }: { r: CheckResult }) {
         </div>
         <div className="check-cov-text">
           <strong>
-            Coverage: we could check {matched} of {total} references
+            Coverage: we could check {matched} of {total}{" "}
+            {total === 1 ? "reference" : "references"}
           </strong>
           <span>
             {unmatched > 0 ? (
               <>
-                The other {unmatched} are outside our reach, which is a limit of
-                this tool and not a finding about the paper.{" "}
+                The other {unmatched} {unmatched === 1 ? "is" : "are"} outside
+                our reach, which is a limit of this tool and not a finding about
+                the paper.{" "}
               </>
             ) : (
               <>Every entry in the bibliography resolved to a paper that exists.{" "}</>

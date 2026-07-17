@@ -26,6 +26,8 @@ type CheckResult = {
       unparseable: number;
       not_found_raw: number;
       suspicious_leads: number;
+      triage?: Record<string, number>;
+      llm_judge?: Record<string, number>;
     };
     l2: {
       judged: number;
@@ -263,35 +265,131 @@ export default function CheckClient() {
 
 function Result({ r }: { r: CheckResult }) {
   const { l1, l2 } = r.summary;
-  const clean =
-    r.leads.existence.length === 0 && r.leads.support.length === 0;
+  const triage = l1.triage ?? {};
+  const judge = l1.llm_judge ?? {};
+  const total = r.summary.references_total;
+  // An index hit at L1, plus the not_found residue that fuzzy rescue matched
+  // to a real paper anyway.
+  const matched = l1.exists + l1.minor_mismatch + (triage.exists ?? 0);
+  const unmatched = total - matched;
+  const nonPaper = (triage.non_paper ?? 0) + (judge.non_paper ?? 0);
+  const garbled = (judge.garbled ?? 0) + l1.unparseable;
+  const readCites = l2.claim_cites;
+  const existenceLeads = r.leads.existence.length;
+  const supportLeads = r.leads.support.length;
+  const clean = existenceLeads + supportLeads === 0;
+
+  // Health is the share of the checks we could actually run that came back
+  // without a lead. Entries we could not parse are excluded from the
+  // denominator rather than counted against the paper: they were never checked.
+  const checks = total - garbled + readCites;
+  const health = checks
+    ? Math.round((100 * (checks - existenceLeads - supportLeads)) / checks)
+    : null;
+  const band =
+    health === null
+      ? ""
+      : health === 100
+        ? "no leads in anything we could check"
+        : health >= 95
+          ? "a few leads worth a look"
+          : "several leads worth a look";
+  const coverage = total ? Math.round((100 * matched) / total) : 0;
+
+  const residue: string[] = [];
+  if (nonPaper)
+    residue.push(
+      `${nonPaper} ${nonPaper === 1 ? "is not a paper" : "are not papers"} at all (a URL, software, a dataset)`
+    );
+  if (garbled)
+    residue.push(
+      `${garbled} ${garbled === 1 ? "was" : "were"} too garbled to parse`
+    );
+  const rest = unmatched - nonPaper - garbled;
+  if (rest > 0) residue.push(`${rest} we simply could not find`);
+
+  const funnel = [
+    {
+      n: total,
+      label: "references in the bibliography",
+      sub: "every entry we could extract from the PDF.",
+    },
+    {
+      n: matched,
+      label: "matched to a real paper",
+      sub: unmatched
+        ? `found in DBLP or Cito, or rescued by fuzzy match. Of the ${unmatched} that did not match, ${residue.join(", ")}.`
+        : "every entry resolved to a paper that exists.",
+    },
+    {
+      n: readCites,
+      label: "claims read against the cited paper",
+      sub: `matched references whose citing sentence makes a checkable claim, judged against the cited paper's full text${l2.capped ? ", capped at 60 per paper" : ""}. The other ${matched - readCites} are nominal citations, or we could not retrieve the text to read.`,
+    },
+  ];
+
   return (
     <div className="check-result">
       <h2>
         {r.title} <span className="check-year">({r.year})</span>
       </h2>
 
+      {health !== null && (
+        <div className="check-health">
+          <div className="check-score">
+            <span className={clean ? "num" : "num accent"}>{health}</span>
+            <span className="denom">/100</span>
+          </div>
+          <div className="check-score-text">
+            <strong>Citation health: {band}</strong>
+            <span>
+              The share of our {checks} checks that came back clean. It scores
+              what we could verify, not the paper: {coverage}% of the
+              bibliography matched an index, and only matched references get
+              their claims read.
+            </span>
+          </div>
+        </div>
+      )}
+
+      <ol className="check-funnel">
+        {funnel.map((f) => (
+          <li key={f.label}>
+            <div className="fn-head">
+              <span className="fn-num">{f.n}</span>
+              <span className="fn-label">{f.label}</span>
+            </div>
+            <div className="fn-track" aria-hidden>
+              <div
+                className="fn-fill"
+                style={{ width: `${total ? (100 * f.n) / total : 0}%` }}
+              />
+            </div>
+            <p className="fn-sub">{f.sub}</p>
+          </li>
+        ))}
+      </ol>
+
       <div className="check-figures">
         <div>
-          <span className="num">{r.summary.references_total}</span>
-          <span className="label">references extracted</span>
-        </div>
-        <div>
-          <span className="num">{l1.exists + l1.minor_mismatch}</span>
-          <span className="label">resolved as existing</span>
-        </div>
-        <div>
-          <span className="num">{l2.claim_cites}</span>
+          <span className={existenceLeads ? "num accent" : "num"}>
+            {existenceLeads}
+          </span>
           <span className="label">
-            claim citations read against the cited paper
-            {l2.capped ? " (capped at 60)" : ""}
+            <strong>references that may not exist</strong>
+            <br />
+            not found in any index, and triage still finds them suspicious
           </span>
         </div>
         <div>
-          <span className={r.leads.support.length ? "num accent" : "num"}>
-            {r.leads.existence.length + r.leads.support.length}
+          <span className={supportLeads ? "num accent" : "num"}>
+            {supportLeads}
           </span>
-          <span className="label">leads for your review</span>
+          <span className="label">
+            <strong>claims the cited paper does not back</strong>
+            <br />
+            the reference is real, but it does not say what it is cited for
+          </span>
         </div>
       </div>
 

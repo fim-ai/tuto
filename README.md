@@ -62,6 +62,29 @@ GROBID needs to be running: `docker run -d --name grobid -p 8070:8070 lfoppiano/
 
 To audit a different venue, add a row to the `VENUES` table in `src/tuto/ingest/acl_anthology.py`.
 
+### Keeping the DBLP snapshot current
+
+Every L1 existence check runs against a local DBLP snapshot, so a stale one shows up as
+false "could not find" leads on recent papers. dblp.org rebuilds its dump nightly and
+publishes an md5 beside it, so the refresh asks what changed before pulling a gigabyte:
+
+```bash
+uv run tuto refresh-dblp              # rebuild only if upstream moved
+uv run tuto refresh-dblp --force      # rebuild regardless
+```
+
+It downloads `dblp.xml.gz`, verifies the published md5, parses it into a temporary
+database, and only then `os.replace()`s it onto `data/cache/dblp/dblp.sqlite`. The swap is
+atomic and a build that parses implausibly few records is refused, so the live `/check`
+service keeps serving from the old snapshot through a refresh or a failed one. Concurrent
+runs take a lock and exit. A full rebuild is ~8.6M records and takes tens of minutes.
+
+In production this runs monthly from cron against the API container:
+
+```
+30 4 1 * * /usr/bin/docker exec tuto-api tuto refresh-dblp --quiet >> /root/tuto-data/refresh-dblp.log 2>&1
+```
+
 ## Quick facts
 
 - Data source: ACL Anthology directly (full bib dump, PDFs at predictable URLs)

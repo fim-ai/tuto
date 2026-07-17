@@ -258,6 +258,18 @@ def cmd_verify(args: argparse.Namespace) -> None:
     print(f"wrote {run_dir}/verdicts.jsonl")
 
 
+def cmd_refresh_dblp(args: argparse.Namespace) -> None:
+    import sys
+
+    from tuto.verify.refresh_dblp import refresh
+
+    # Quiet by default when nobody is watching, so cron logs stay readable.
+    quiet = args.quiet or not sys.stderr.isatty()
+    r = refresh(CACHE / "dblp", force=args.force, keep_dump=args.keep_dump, quiet=quiet)
+    if r.status == "locked":
+        raise SystemExit(0)
+
+
 def main() -> None:
     parser = argparse.ArgumentParser(prog="tuto")
     sub = parser.add_subparsers(dest="command", required=True)
@@ -284,6 +296,12 @@ def main() -> None:
     p.add_argument("--cito-rps", type=float, default=20.0, help="Cito requests/sec cap")
     p.add_argument("--workers", type=int, default=12, help="concurrent Cito lookups")
     p.set_defaults(func=cmd_verify)
+
+    p = sub.add_parser("refresh-dblp", help="rebuild the DBLP snapshot if it changed upstream")
+    p.add_argument("--force", action="store_true", help="rebuild even if the md5 is unchanged")
+    p.add_argument("--keep-dump", action="store_true", help="keep dblp.xml.gz (~1GB) after build")
+    p.add_argument("--quiet", action="store_true", help="no progress bars (use in cron)")
+    p.set_defaults(func=cmd_refresh_dblp)
 
     args = parser.parse_args()
     args.func(args)

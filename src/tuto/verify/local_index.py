@@ -53,8 +53,12 @@ def _doi_from_ees(elem: etree._Element) -> str | None:
     return None
 
 
-def build_index(bib_gz: Path, db_path: Path, dtd_path: Path) -> dict:
-    """Parse the DBLP dump into SQLite. Idempotent: rebuilds the table from scratch."""
+def build_index(bib_gz: Path, db_path: Path, dtd_path: Path, quiet: bool = False) -> dict:
+    """Parse the DBLP dump into SQLite. Idempotent: rebuilds the table from scratch.
+
+    quiet suppresses the progress bar, which is what an unattended cron run wants: tqdm
+    on a non-tty writes a line per update and would bury the log in millions of them.
+    """
     fetch_dtd(dtd_path)
     db_path.parent.mkdir(parents=True, exist_ok=True)
     if db_path.exists():
@@ -88,7 +92,7 @@ def build_index(bib_gz: Path, db_path: Path, dtd_path: Path) -> dict:
         context = etree.iterparse(
             raw, events=("end",), tag=tuple(PUB_TYPES), dtd_validation=False, **parser_kw
         )
-        bar = tqdm(desc="dblp", unit="rec", unit_scale=True)
+        bar = tqdm(desc="dblp", unit="rec", unit_scale=True, disable=quiet)
         for _, elem in context:
             title = elem.findtext("title")
             nt = norm_title(title)

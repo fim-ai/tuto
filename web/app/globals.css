@@ -61,8 +61,23 @@ a {
 
 /* ---------- header ---------- */
 
+/* Sticky, translucent: the wordmark and Check stay reachable down a long
+   report. Blur keeps the hairline readable over scrolling text; the fallback
+   below is opaque for browsers without backdrop-filter. */
 .site-header {
+  position: sticky;
+  top: 0;
+  z-index: 20;
+  background: var(--bg);
   border-bottom: 1px solid var(--hairline);
+}
+
+@supports (backdrop-filter: blur(1px)) or (-webkit-backdrop-filter: blur(1px)) {
+  .site-header {
+    background: color-mix(in srgb, var(--bg) 82%, transparent);
+    -webkit-backdrop-filter: saturate(180%) blur(10px);
+    backdrop-filter: saturate(180%) blur(10px);
+  }
 }
 
 .site-header .shell {
@@ -217,8 +232,17 @@ a {
 .figure-row {
   display: flex;
   align-items: baseline;
-  gap: 0.85rem;
+  gap: 1.5rem;
   padding: 1.05rem 0;
+}
+
+/* The lead pairs the icon with its number. As a flex item it still exposes the
+   number's baseline to the row, so the label keeps aligning to the number
+   while the icon centres on the digits instead of drifting down a tall row. */
+.figure-lead {
+  display: flex;
+  align-items: center;
+  gap: 0.85rem;
 }
 
 /* Faint by default: the numbers carry this block, the icons only pace it.
@@ -227,7 +251,6 @@ a {
   width: 17px;
   height: 17px;
   flex: none;
-  align-self: center;
   color: var(--ink-faint);
 }
 

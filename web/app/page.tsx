@@ -65,8 +65,12 @@ export default function Home() {
           <div className="hero-figures">
             {FIGURES.map(({ icon: Icon, num, accent, label }) => (
               <div className="figure-row" key={num}>
-                <Icon className="figure-icon" />
-                <span className={accent ? "num accent" : "num"}>{num}</span>
+                {/* Icon and number are one unit, so the icon centres on the
+                    number rather than on a row height the label decides. */}
+                <span className="figure-lead">
+                  <Icon className="figure-icon" />
+                  <span className={accent ? "num accent" : "num"}>{num}</span>
+                </span>
                 <span className="label">{label}</span>
               </div>
             ))}

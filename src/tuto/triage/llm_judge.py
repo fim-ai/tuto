@@ -27,6 +27,7 @@ from __future__ import annotations
 
 import argparse
 import json
+import re
 import threading
 from collections import Counter
 from concurrent.futures import ThreadPoolExecutor
@@ -42,11 +43,17 @@ DATA = ROOT / "data"
 
 JUDGE_MODEL = "claude-haiku-4-5-20251001"  # env L1_JUDGE_MODEL overrides
 
-SYSTEM = (
-    "You classify one raw bibliography entry scraped from an NLP conference paper. "
-    "Automated lookup of this entry already failed against large scholarly indexes "
-    "(DBLP, arXiv, OpenAlex, a 148M-paper corpus); do not re-litigate the lookup, judge "
-    "what the STRING is. Categories:\n"
+SYSTEM_TMPL = (
+    "You classify one raw bibliography entry scraped from an NLP conference paper "
+    "published in {venue_year}. Automated lookup of this entry already failed against "
+    "large scholarly indexes (DBLP, arXiv, OpenAlex, a 148M-paper corpus); do not "
+    "re-litigate the lookup, judge what the STRING is.\n"
+    "TEMPORAL CONTEXT: your training data may end before {venue_year}. References dated "
+    "up to {venue_year} (recent preprints, new model/system releases, papers you have "
+    "never seen) are temporally NORMAL for a {venue_year} paper. Never classify an entry "
+    "as suspicious merely because its year is recent, because it postdates your knowledge "
+    "cutoff, or because you have not heard of the model/system it describes.\n"
+    "Categories:\n"
     "- known_paper: you recognize this specific work and are confident it is a real "
     "scholarly paper (the lookup failure is index coverage or parsing).\n"
     "- plausible_paper: reads as a coherent scholarly citation (authors, title, venue/year "
@@ -58,8 +65,8 @@ SYSTEM = (
     "fragments that are not a usable citation.\n"
     "- suspicious: presents itself as a scholarly paper at a specific venue, yet the "
     "author-title-venue combination is one you are CONFIDENT does not exist (e.g. a "
-    "well-covered venue/year you know well). Use sparingly; when torn between suspicious "
-    "and plausible_paper, choose plausible_paper."
+    "well-covered venue/year you know well, predating your knowledge cutoff). Use "
+    "sparingly; when torn between suspicious and plausible_paper, choose plausible_paper."
 )
 
 USER_TMPL = """REFERENCE (as parsed from the PDF):
@@ -74,8 +81,16 @@ Return JSON:
   "confidence": 0-1}}"""
 
 
+def venue_year(venue: str) -> int:
+    m = re.search(r"(19|20)\d{2}", venue)
+    if not m:
+        raise ValueError(f"cannot infer year from venue {venue!r}")
+    return int(m.group())
+
+
 def run(venue: str, limit: int | None, workers: int, model: str | None) -> dict:
     run_dir = DATA / "runs" / venue
+    system = SYSTEM_TMPL.format(venue_year=venue_year(venue))
     refs = {r["ref_id"]: r for r in read_jsonl(run_dir / "refs.jsonl")}
     suspects = [t for t in read_jsonl(run_dir / "triage.jsonl") if t["stage_verdict"] == "suspect"]
     if limit:
@@ -101,7 +116,7 @@ def run(venue: str, limit: int | None, workers: int, model: str | None) -> dict:
         if not raw:
             return None
         verdict = llm.judge_json(
-            SYSTEM,
+            system,
             USER_TMPL.format(raw=raw[:400], title=(ref.get("title") or "")[:120], year=ref.get("year")),
         )
         if verdict is None:

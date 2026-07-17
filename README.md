@@ -32,10 +32,10 @@
 |---|---|
 | `src/tuto/` | 审计管线（ingest / parse / verify / triage / arbiter） |
 | `docs/` | 报告全文（中英）、PRD、架构文档、人工复核记录（已匿名化） |
-| `web/` | tuto.fim.ai 报告站点（Next.js 静态站，渲染 `docs/` 下的报告） |
+| `web/` | tuto.fim.ai 站点：报告 + [/check](https://tuto.fim.ai/check) 单篇自助核查页 |
 | `tests/` | 解析与解析器守护回归测试 |
 
-自助核查 API（/check）规划中，届时另建服务仓库。
+**单篇自助核查已上线**：[tuto.fim.ai/check](https://tuto.fim.ai/check) 丢一个 arXiv ID，跑与全量审计同一条管线（存在性 + 论断支撑 + 仲裁），几分钟后返回「待人工复核的线索」。服务端在 `src/tuto/check/`（FastAPI，`pip install -e ".[api]"`），单机自部署：`uvicorn tuto.check.service:app` + 一个 GROBID 容器 + DBLP 快照。
 
 ## 管线一览
 

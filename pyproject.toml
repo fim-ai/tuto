@@ -15,6 +15,13 @@ dependencies = [
     "rank-bm25>=0.2.2",
 ]
 
+[project.optional-dependencies]
+api = [
+    "fastapi>=0.115",
+    "uvicorn>=0.30",
+    "pydantic>=2.0",
+]
+
 [project.scripts]
 tuto = "tuto.cli:main"
 

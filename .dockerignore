@@ -1,0 +1,8 @@
+.git
+.venv
+data
+dataset
+web/node_modules
+web/.next
+web/out
+*.tar.gz

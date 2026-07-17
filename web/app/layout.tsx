@@ -26,6 +26,7 @@ export default function RootLayout({
               Tuto<span>.</span>
             </Link>
             <nav className="site-nav">
+              <Link href="/check">Check</Link>
               <Link href="/report">Report</Link>
               <Link href="/report/zh">中文</Link>
               <a

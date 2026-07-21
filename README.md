@@ -1,6 +1,6 @@
 # Tuto
 
-> cito, **tuto**, iucunde: swiftly, safely, pleasantly. Cito finds the literature. Tuto makes sure it is cited correctly.
+> Cito, **Tuto**, iucunde: swiftly, safely, pleasantly. Cito finds the literature. Tuto makes sure it is cited correctly.
 
 A citation-integrity audit pipeline, plus a public integrity report for major venues. First run: the ACL 2026 proceedings (4,459 papers, main conference and Findings).
 

@@ -7,7 +7,7 @@ A citation-integrity audit pipeline, plus a public integrity report for major ve
 We checked all 209,985 references in ACL 2026 on two levels: whether the cited work exists (L1), and, for claim citations, whether the cited paper actually supports the claim it is attached to (L2).
 
 - Site: [tuto.fim.ai](https://tuto.fim.ai), the public report; the single-paper self-service checker is at [/check](https://tuto.fim.ai/check)
-- Report source: `docs/REPORT-acl-2026-draft.en.md`
+- Report source: `docs/REPORT-acl-2026.en.md`
 - Dataset: [`dataset/`](dataset/), 18,724 + 3,795 citation-level judgments and 169 arbitration records, anonymized, CC BY 4.0; schema in its README
 - Docs: `docs/PRD.md` (product spec), `docs/ARCHITECTURE.md` (technical architecture)
 

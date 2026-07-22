@@ -1,12 +1,11 @@
 # Citation Integrity at ACL 2026: A Full-Corpus Audit
 
-> **Draft v0.7 (English)** · 2026-07-21 · tuto.fim.ai
-> Remaining before site release: final anonymization pass on the L2 case gallery (done in this draft, pending owner sign-off). The L1 suspicious review is complete; its record ships in anonymized form only. By decision there is no author notification or appeal window: the report is aggregate-only and names no one, so there is nothing to appeal.
-> Hard rule throughout: aggregate statistics and anonymized cases only. No paper or author is ever named.
+> **Final report** · 2026-07-21 · tuto.fim.ai
+> Aggregate statistics and anonymized cases only. No paper or author is ever named. There is no author notification or appeal window: the report names no one, so there is nothing to appeal.
 
-> **Update v0.7 · 2026-07-21: the support measurement does not reproduce, and this is now the report's central finding.**
+> **Central finding: the support measurement does not reproduce.**
 >
-> The audited run below reports a confirmed support-defect rate of 0.95%. It does not replicate. Two further independent draws of 100 ACL 2026 papers each, through the same code at the same commit, returned 5.66% and 6.12%, statistically indistinguishable from each other (z = 0.53) and pooling to **5.90% [5.12, 6.80]** over 3,033 claim citations, 7.9 cluster-robust standard errors from the audited run. The existence census (L1, §5) is unaffected: it returns the same answer to a tenth of a point across all three draws. The gap sits entirely in the L2 support-judgment layer and traces to a first-pass judge whose model was read from an unlogged environment variable (default `gpt-4o-mini`) and never recorded, so the run that produced 0.95% cannot be attributed to a known model. **Two statements below are withdrawn:** "the conclusions are reproducible" (§3.4) and that this report "standardizes on 0.95%" (§8). We now report all three runs and take the non-replication itself as the finding: a single-run automated citation audit, however carefully its outputs are hand-checked, has not shown that it measured anything. The failure is operational, not inherent: pinning and logging the judge restores repeatability (§11 demo: 2.47% vs 3.09% on re-judgement), and the fix is to record the model, which we have done. Every "0.95%" below is the audited run, read against this note; sections are being revised to match, and the instrumentation is fixed so the model producing each judgment is now recorded.
+> The audited run below reports a confirmed support-defect rate of 0.95%. It does not replicate. Two further independent draws of 100 ACL 2026 papers each, through the same code at the same commit, returned 5.66% and 6.12%, statistically indistinguishable from each other (z = 0.53) and pooling to **5.90% [5.12, 6.80]** over 3,033 claim citations, 7.9 cluster-robust standard errors from the audited run. The existence census (L1, §5) is unaffected: it returns the same answer to a tenth of a point across all three draws. The gap sits entirely in the L2 support-judgment layer and traces to a first-pass judge whose model was read from an unlogged environment variable (default `gpt-4o-mini`) and never recorded, so the run that produced 0.95% cannot be attributed to a known model. This report therefore does not claim that its conclusions are reproducible from a single L2 run, and does not standardize on 0.95%. We report all three runs and take the non-replication itself as the finding: a single-run automated citation audit, however carefully its outputs are hand-checked, has not shown that it measured anything. The failure is operational, not inherent: pinning and logging the judge restores repeatability (§11 demo: 2.47% vs 3.09% on re-judgement), and the fix is to record the model, which we have done. Every "0.95%" below is the audited run, read against this note; the instrumentation is fixed so the model producing each judgment is now recorded.
 
 ---
 
@@ -70,7 +69,7 @@ Any difference attributes to the review-and-revision axis.
 
 - The public report contains aggregate statistics and anonymized cases only, and never names anyone. Since no one is named, there is no accusation, and therefore no notification or appeal process (see §11).
 - The verdict wording is always `not supported by the cited text`, never `fabricated`. We verify text correspondence; we do not judge intent.
-- Pipeline code, taxonomy, and false-positive rates are all public (Apache-2.0). The released records let every rate here be recomputed; the measurement itself does not reproduce across re-runs (see the 2026-07-21 update at the top).
+- Pipeline code, taxonomy, and false-positive rates are all public (Apache-2.0). The released records let every rate here be recomputed; the measurement itself does not reproduce across re-runs (see the note at the top).
 
 ## 4. Corpora and parsing acceptance
 
@@ -188,11 +187,11 @@ Three readings:
 
 - **This is the number that matters to authors.** A citation-level 0.95% sounds ignorable; a paper-level "one in six papers, maybe yours" does not.
 - **Problems cluster.** Two of the 16 problem papers carry 3 confirmed problems each. Citation sloppiness is a paper-level trait, not uniform noise. This favors a "check the whole paper before submission" product over per-citation spot luck.
-- **The audited citation-level rate, 0.95%, does not reproduce.** Two later independent draws through the same code returned 5.66% and 6.12% (pooled 5.90% [5.12, 6.80]), 7.9 standard errors away; the earlier pilot's 0.27% [0.05-1.53] rested on a single confirmed case. The report no longer standardizes on any single value; it reports all three runs and treats the non-replication as the finding (see the 2026-07-21 update).
+- **The audited citation-level rate, 0.95%, does not reproduce.** Two later independent draws through the same code returned 5.66% and 6.12% (pooled 5.90% [5.12, 6.80]), 7.9 standard errors away; the earlier pilot's 0.27% [0.05-1.53] rested on a single confirmed case. The report does not standardize on any single value; it reports all three runs and treats the non-replication as the finding (see the note at the top).
 
 ## 9. Case gallery (anonymized)
 
-Representative cases from the 25 confirmed findings (5 pilot + 20 paper-level), grouped by error type. The release version will add a one-click Cito repair demo (a correct substitute reference plus a ready-made bib entry). All cases are paraphrased; none is quoted verbatim.
+Representative cases from the 25 confirmed findings (5 pilot + 20 paper-level), grouped by error type. All cases are paraphrased; none is quoted verbatim.
 
 **Stance inversion (6/25)**: citing a paper that discusses the topic, without checking which side it takes. Existence checks can never catch this type, and it hurts readers the most.
 
@@ -222,17 +221,17 @@ Representative cases from the 25 confirmed findings (5 pilot + 20 paper-level), 
 3. **One context per citation**: we judge the most specific (least co-cited) occurrence. Other occurrences of the same citation are not covered.
 4. **Judgments rely on LLMs**: two stages, human calibration, and fully public prompts mitigate but do not eliminate this. Arbiter and human readings disagree, both ways defensibly, in the stance-loaded gray zone (3 pilot cases).
 5. **The control corpus is not fully comparable**: arXiv 2024-01 and ACL 2026 differ in time and topic mix, and the preprint batch was judged before the pipeline fixes (its flags went through arbitration, so the directional impact is limited). The comparison supports only the coarse conclusion of "no dramatic difference."
-6. **Confirmed cases have a gray zone**: in a full hand read of the 20 paper-level confirmed cases, about 3-5 are borderline (generalizing sentences over multi-citation lists and similar), defensible in both directions. Removing all of them keeps the paper-level rate near 12%; the core conclusion stands. The release version will carry per-case confidence labels.
+6. **Confirmed cases have a gray zone**: in a full hand read of the 20 paper-level confirmed cases, about 3-5 are borderline (generalizing sentences over multi-citation lists and similar), defensible in both directions. Removing all of them keeps the paper-level rate near 12%; the core conclusion stands.
 7. **L1's recall blind spot**: L1 can only confirm entries the judging model dares to declare nonexistent. A fabricated citation with a plausible enough author-title-venue combination lands in plausible_paper (2,753 entries) and is never flagged; fuzzy rescue can also "rescue" a fabricated entry onto a neighboring real paper. The 2 confirmed cases are a detectable lower bound. Read the L1 number as "detectable fabrication is extremely rare," not "fabrication is extremely rare." This is one more argument that support checking (L2) is the real battleground.
 
-## 11. Next steps
+## 11. Status and follow-ups
 
-- **[Done, 2026-07-21] Reproduction demo.** Pinning the first-pass judge to a known model (Haiku 4.5) and re-judging the identical citations twice gives a repeatable confirmed rate: 2.47% and 3.09% over the same 162 paired claim citations, a difference of one confirmed case, with intervals overlapping almost entirely, against the sixfold swing seen when the judge was unlogged. The pinned model also does not reproduce the audited run's label signature: `unverifiable_from_text` is 14.8% in both passes versus 25.5% in the audit, and `partial` is about 7% versus 0.4%. Both are consistent with the audited run having used a weaker, unrecoverable judge. This is a repeatability-and-mechanism demonstration on a paired subset, not a re-estimate of the population rate, which remains the 5.90% from the two 100-paper replications. The instrumentation is fixed so every judgment now records its model.
-- **[Done]** Paper-level audit of 100 papers (§8).
-- **[Done]** L1 residue triage (§5, all 18,724 entries; re-judged after the prompt-v2 fix for the year-context false positives) plus manual review of the 12 suspicious entries (2 confirmed; anonymized record in `docs/SUSPICIOUS-review-checklist.md`, full evidence chain kept internal). L1 is closed end to end.
-- **[Precheck failed; parked]** The year axis: ACL 2018/2019 vs. 2026, testing whether citation quality changed in the LLM-writing era. The coverage precheck (2026-07-17: 400 known-real NLP-venue papers per group from DBLP, queried against Cito, normalized-title exact match) found 90.0% hit rate on pre-2015 literature vs. 98.25% on 2020-2024, an 8.25pp gap against a 5pp gate. Old-year not_found rates would be inflated by index coverage rather than citation quality, so the comparison is parked as designed, unless re-scoped to the subset both backends can resolve.
-- **[Release process]** Publish the report plus the anonymized dataset (CC BY) directly. By decision, no pre-release author notification or appeal window: the report publishes aggregates and anonymized cases only, and naming no one means accusing no one. Notification and appeals are the apparatus for a world where people can be identified; that world is not this report. The "+30-day author correction rate" follow-up metric is dropped accordingly.
-- **[Product]** /check, a single-paper self-service tool: this report's two-stage pipeline as a service, ten minutes before submission. The report is the traffic; the tool is the conversion.
+- **Reproduction demo (done).** Pinning the first-pass judge to a known model (Haiku 4.5) and re-judging the identical citations twice gives a repeatable confirmed rate: 2.47% and 3.09% over the same 162 paired claim citations, a difference of one confirmed case, with intervals overlapping almost entirely, against the sixfold swing seen when the judge was unlogged. The pinned model also does not reproduce the audited run's label signature: `unverifiable_from_text` is 14.8% in both passes versus 25.5% in the audit, and `partial` is about 7% versus 0.4%. Both are consistent with the audited run having used a weaker, unrecoverable judge. This is a repeatability-and-mechanism demonstration on a paired subset, not a re-estimate of the population rate, which remains the 5.90% from the two 100-paper replications. The instrumentation is fixed so every judgment now records its model.
+- **Paper-level audit of 100 papers (§8):** done.
+- **L1 residue triage (§5):** done end to end (all 18,724 entries; re-judged after the prompt-v2 fix for the year-context false positives) plus manual review of the 12 suspicious entries (2 confirmed; anonymized record in `docs/SUSPICIOUS-review-checklist.md`, full evidence chain kept internal).
+- **Year axis (parked).** ACL 2018/2019 vs. 2026, testing whether citation quality changed in the LLM-writing era. The coverage precheck (2026-07-17: 400 known-real NLP-venue papers per group from DBLP, queried against Cito, normalized-title exact match) found 90.0% hit rate on pre-2015 literature vs. 98.25% on 2020-2024, an 8.25pp gap against a 5pp gate. Old-year not_found rates would be inflated by index coverage rather than citation quality, so the comparison is parked as designed, unless re-scoped to the subset both backends can resolve.
+- **Public release.** This report and the anonymized dataset (CC BY) are published. There is no author notification or appeal window: the report is aggregates and anonymized cases only, and naming no one means accusing no one.
+- **/check.** A single-paper self-service tool at [tuto.fim.ai/check](https://tuto.fim.ai/check): this report's two-stage pipeline as a service, for the ten minutes before submission.
 
 ---
 
@@ -248,5 +247,5 @@ Representative cases from the 25 confirmed findings (5 pilot + 20 paper-level), 
 
 Pipeline code (Apache-2.0): ingest → parse (GROBID) → L1 verify → L2 judge → arbiter → report.
 Fixed random seeds; judging prompts, error taxonomy, and regression tests ship with the repository.
-Note (2026-07-21): fixed seeds reproduce the sampling frame and the released records reproduce every rate, but the L2 judgment layer does not reproduce across re-runs; see the update at the top of this report.
+Note: fixed seeds reproduce the sampling frame and the released records reproduce every rate, but the L2 judgment layer does not reproduce across re-runs; see the note at the top of this report.
 Anonymized dataset (citation-level judgments plus arbitration records, paper identifiers removed): CC BY 4.0, in the repository's `dataset/` directory at github.com/fim-ai/tuto.

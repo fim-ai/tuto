@@ -8,10 +8,10 @@ export const metadata: Metadata = {
 };
 
 export default function ReportPage() {
-  const md = readReport("REPORT-acl-2026-draft.en.md");
+  const md = readReport("REPORT-acl-2026.en.md");
   return (
     <main className="article-shell">
-      <p className="article-meta">Draft v0.7 · 2026-07-21</p>
+      <p className="article-meta">Final report · 2026-07-21</p>
       <Article markdown={md} />
     </main>
   );
